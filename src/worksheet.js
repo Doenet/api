@@ -15,10 +15,11 @@ export class Worksheet {
   }
 
   recordProgress( score ) {
-    // BADBAD: send this.id too because sometimes the referer isn't
-    // sent
+    // sending this.id too because sometimes the referer isn't sent
     return axios.put(this.api + '/learners/me/progress', {
       score: score      
+    }, {
+      headers: {'X-Doenet-Worksheet': this.id}
     });
   }
 
