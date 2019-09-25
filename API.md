@@ -12,13 +12,13 @@ By default, the worksheet id is `window.location.path`.
 represents various xAPI nouns.  `new doenet.Actor()` on its own is the
 learner `me`.
 
+## worksheet.progress = p
+
+performs a cross-origin PUT /learners/:user/progress to set the progress to `p`.
+
 ## worksheet.recordStatement( stmt ) 
 
 performs a cross-origin POST /learners/:user/statements
-
-## worksheet.recordProgress( progress ) 
-
-performs a cross-origin PUT /learners/:user/progress
 
 ## worksheet.saveState( db )
 
@@ -36,6 +36,6 @@ Somehow provide real-time updates?
 
 ```
 let worksheet = new doenet.Worksheet();
-worksheet.recordProgress(0.75);
+worksheet.progress = 0.75;
 ```
 
