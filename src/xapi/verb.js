@@ -1,10 +1,14 @@
 export class xapiVerb {
-  constructor( name ) {
-    if (name) {
-      this.name = name;
-    } else {
-      this.name = 'me';
+  constructor( data ) {
+    this.id = data.id;
+    
+    if (data.display) {
+      this.display = data.display;
     }
+  }
+
+  extendStatement( statement ) {
+    statement.verb = this;
   }
 }
 

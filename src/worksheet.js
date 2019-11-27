@@ -17,14 +17,30 @@ async function fetchFingerprint() {
 }
 
 export class Worksheet {
-  constructor(options = {}) {
+  constructor(options = {}) {    
     if (options.api) {
       this.api = options.api;
     } else {
       this.api = "https://doenet.org";
     }
 
-    this.id = window.location.toString();
+    if (options.id) {
+      // FIXME: We are *trusting* the caller here...
+      this.id = options.id;
+    } else {
+      this.id = window.location.toString();
+    }
+
+    if (options.title) {
+      this.title = options.title;
+    } else {
+      this.title = document.title;
+    }
+
+    this.progressCallbacks = [];
+    this.progress = undefined;
+
+    let worksheet = this;
 
     // I want to use the identity logged into doenet, so we proxy this
     // all through an iframe
@@ -34,32 +50,51 @@ export class Worksheet {
     document.body.appendChild(iframe);
     this.contentWindow = iframe.contentWindow;
 
-    let worksheet = this;
+    // let registered event handlers know about progress updates
+    window.addEventListener("message", function(event) {
+      if (event.source == iframe.contentWindow) {
+        worksheet.progress = event.data;
+        
+        for( const callback of worksheet.progressCallbacks ) {
+          callback( event, event.data );
+        }
+      }
+    }, false);
+    
+    // request the current page progress as soon as possible
     iframe.addEventListener("load", function() {
       iframe.contentWindow.postMessage( { message: 'getProgress',
-                                        parameters: { worksheet: worksheet.id } },
-                                      worksheet.api );
+                                          parameters: { worksheet: worksheet.id } },
+                                        worksheet.api );
     });
-    
+
+    // get a browser fingerprint
     (async function() {
       let fp = await fetchFingerprint();
       console.log(fp);
       console.log(hash(fp));
     })();
   }
-  
-  recordStatement( stmt ) {
+
+  addEventListener( eventName, callback ) {
+    if (eventName == 'progress') {
+      callback( {}, this.progress );
+      this.progressCallbacks.push( callback );
+    }
   }
 
-  set progress( score ) {
+  setProgress( score ) {
+    this.progress = score;
+    
     this.contentWindow.postMessage( { message: 'setProgress',
-                                      parameters: { score: score, worksheet: this.id } },
+                                      parameters: { score: this.progress,
+                                                    worksheet: this.id,
+                                                    title: this.title } },
                                     this.api );
   }
 
-  get progress() {
+  recordStatement( stmt ) {
   }
-
   
   saveState( state ) {
   }

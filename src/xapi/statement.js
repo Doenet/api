@@ -1,5 +1,7 @@
 export class xapiStatement {
-  constructor(actor, verb, object, context) {
+  constructor() {
+    for( const x in arguments ) {
+      x.extendStatement( this );
+    }
   }
 }
-
