@@ -69,9 +69,27 @@ new doenet.xAPI.Statement(
 
 performs a cross-origin POST /learners/:user/worksheets/:worksheet/statements
 
-## worksheet.saveState( db )
+## worksheet.state
 
-Save `db` to the remote server.
+This is a proxied object.  To mutate some part of the state,
+```
+worksheet.state.favoriteNumber = 17;
+```
+or you can mutate all the state, e.g.,
+```
+worksheet.state = { x: 17, y: 100 };
+```
+In either case, such mutations result in a (debounced) patch being sent to the server.
+
+Nested objects are also tracked, e.g., if
+```
+worksheet.state = { is: { so: { deeply: 'nested' } } };
+```
+you could run 
+```
+worksheet.state.is.so.deeply = 'awesome';
+```
+and trigger a patch.
 
 ## worksheet.addEventListener('state', function(event, state) {});
 

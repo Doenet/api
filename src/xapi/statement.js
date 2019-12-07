@@ -7,6 +7,6 @@ export class xapiStatement {
   }
 
   toJSON() {
-    return JSON.stringify(this.triple);
+    return this.triple;
   }
 }

@@ -4,8 +4,15 @@ import hash from 'object-hash';
 import { xapiObject } from './xapi/object.js';
 
 import { createPanelElement, setProgressBar } from './panel.js';
+import { debounce } from 'underscore';
 
 import { gdprConsent } from './gdpr.js';
+
+import { diff, clone, patch } from 'jsondiffpatch';
+import uuidv4 from 'uuid/v4';
+
+//const DIFFSYNC_DEBOUNCE = 5003; // milliseconds to wait to save
+const DIFFSYNC_DEBOUNCE = 303; // milliseconds to wait to save
 
 async function fetchFingerprint() {
   return new Promise((resolve, reject) => {
@@ -24,33 +31,68 @@ async function fetchFingerprint() {
 export class Worksheet extends xapiObject {
   constructor(options = {}) {
     super();
+
+    let worksheet = this;
+
+    worksheet.uuid = uuidv4();
     
     if (options.api) {
-      this.api = options.api;
+      worksheet.api = options.api;
     } else {
-      this.api = "https://api.doenet.cloud";
+      worksheet.api = "https://api.doenet.cloud";
     }
 
     if (options.id) {
       // We are *trusting* the caller here...  We'll end up verifying
       // the same-origin on the iframe side, by comparing this to the
       // origin of our PostMessage
-      this.id = options.id;
+      worksheet.id = options.id;
     } else {
-      this.id = window.location.toString();
+      worksheet.id = window.location.toString();
     }
 
     if (options.title) {
-      this.title = options.title;
+      worksheet.title = options.title;
     } else {
-      this.title = document.title;
+      worksheet.title = document.title;
     }
 
-    this.progressCallbacks = [];
-    this.progress = undefined;
+    worksheet.progressCallbacks = [];
+    worksheet.progress = undefined;
 
-    let worksheet = this;
+    worksheet.stateCallbacks = [];
+    worksheet.shadow = undefined;
+    worksheet.database = {};
 
+    worksheet.differentialSynchronization = debounce(worksheet.differentialSynchronizationImmediately.bind(this), DIFFSYNC_DEBOUNCE);
+
+    let proxyHandler = {
+      get(target, property, receiver) {
+        const value = Reflect.get(...arguments);
+        if (typeof value === 'object') {
+          worksheet.differentialSynchronization();
+          return new Proxy(value, proxyHandler);
+        }
+        return value;
+      },
+      set(target, property, value, receiver) {
+        let succeeded = Reflect.set(...arguments);
+        if (succeeded) {
+          worksheet.differentialSynchronization();
+        }
+        return succeeded;
+      },
+      deleteProperty(target, prop) {
+        let succeeded = Reflect.deleteProperty(...arguments);
+        if (succeeded) {
+          worksheet.differentialSynchronization();          
+        }
+        return succeeded;        
+      }
+    };
+    
+    worksheet.state = new Proxy(worksheet.database, proxyHandler);
+    
     // not consented to data collection yet...
     worksheet.consent = null;
     gdprConsent( (consent) => {
@@ -72,6 +114,40 @@ export class Worksheet extends xapiObject {
               callback( event, event.data );
             }
           }
+
+          if (event.data.message === 'setState') {
+            let newState = event.data.parameters.state;
+
+            worksheet.shadow = clone( newState );
+            worksheet.database = clone( newState );            
+            worksheet.state = new Proxy(worksheet.database, proxyHandler);
+            
+            for( const callback of worksheet.stateCallbacks ) {
+              // FIXME: could wrap this in a "make immutable" proxy
+              callback( event, worksheet.state );
+            }
+          }
+
+          if (event.data.message === 'patchState') {
+            patch( worksheet.database, event.data.parameters.delta );
+
+	    // Confirm that our shadow now matches their shadow
+            if (hash(this.shadow) !== event.data.parameters.checksum) {
+              // We are out of sync, and should request synchronization
+              this.contentWindow.postMessage( { message: 'getState',
+                                                parameters: { worksheet: this.id,
+                                                              uuid: this.uuid
+                                                            } },
+                                              this.api );
+            } else {
+              patch( worksheet.shadow, event.data.parameters.delta );
+            }
+            
+            for( const callback of worksheet.stateCallbacks ) {
+              // FIXME: could wrap this in a "make immutable" proxy
+              callback( event, worksheet.database );
+            }
+          }          
         }
       }, false);
       
@@ -80,15 +156,34 @@ export class Worksheet extends xapiObject {
         iframe.contentWindow.postMessage( { message: 'getProgress',
                                             parameters: { worksheet: worksheet.id } },
                                           worksheet.api );
+
+        iframe.contentWindow.postMessage( { message: 'getState',
+                                            parameters: { worksheet: worksheet.id,
+                                                          uuid: worksheet.uuid                                                          
+                                                        } },
+                                          worksheet.api );
       });
       
       // get a browser fingerprint
       (async function() {
         let fp = await fetchFingerprint();
-        console.log(fp);
-        console.log(hash(fp));
+        //console.log(JSON.stringify( fp ));
+        console.log("fp=",hash(fp));
       })();
       
+    });
+    
+    return new Proxy(this, {
+      set(target, name, value) {
+        if (name === 'state') {
+          target.database = clone(value);
+          target.state = new Proxy(worksheet.database, proxyHandler);
+          target.differentialSynchronization();
+          return true;
+        } else {
+          return Reflect.set(...arguments);
+        }
+      }
     });
   }
                  
@@ -97,6 +192,11 @@ export class Worksheet extends xapiObject {
       callback( {}, this.progress );
       this.progressCallbacks.push( callback );
     }
+
+    if (eventName == 'state') {
+      //callback( {}, this.progress );
+      this.stateCallbacks.push( callback );
+    }    
   }
 
   setProgress( score ) {
@@ -109,23 +209,41 @@ export class Worksheet extends xapiObject {
                                     this.api );
   }
 
+  differentialSynchronizationStatus( status ) {
+    console.log("diffsync status:", status);
+  }
+  
+  differentialSynchronizationImmediately() {
+    if (this.shadow === undefined) {
+      console.log("diffsync: without a shadow, we cannot synchronize.");
+      return;
+    }
+    
+    console.log("diffsync: diffing shadow and database...");
+    let delta = diff( this.shadow, this.database );
+
+    if (delta !== undefined) {
+      this.differentialSynchronizationStatus( 'saving' );
+      this.contentWindow.postMessage( { message: 'patchState',
+                                        parameters: { worksheet: this.id,
+                                                      delta: delta,
+                                                      uuid: this.uuid,
+                                                      checksum: hash(this.shadow)
+                                                    } },
+                                      this.api );
+
+      this.shadow = clone(this.database);
+    }
+  }
+
   recordStatement( statement ) {
     this.contentWindow.postMessage( { message: 'recordStatement',
                                       parameters: { worksheet: this.id,
-                                                    statement: statement.toJSON()
+                                                    statement: JSON.stringify(statement.toJSON())
                                                   } },
                                     this.api );
   }
   
-  saveState( state ) {
-  }
-
-  fetchState( state ) {
-  }
-
-  watchState( state ) {
-  }
-
   ////////////////////////////////////////////////////////////////
   // Because a worksheet is also an xAPI.Object
   extendStatement( statement ) {
