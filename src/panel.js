@@ -1,3 +1,5 @@
+import './panel.css'
+
 let thePanel = undefined;
 let theIFrame = undefined;
 let theBar = undefined;
@@ -12,6 +14,19 @@ export function createPanelElement(apiRoot) {
   thePanel = document.createElement('div');
   thePanel.classList.add(  'doenet-panel' );
 
+  ////////////////////////////////////////////////////////////////
+  // Create the panel progress meter
+  var meter = document.createElement('div');
+  meter.classList.add(  'doenet-meter' );  
+  thePanel.appendChild(meter);
+
+  theBar = document.createElement('span');
+  theBar.classList.add(  'doenet-progress' );
+  setProgressBar( progress );  
+  meter.appendChild( theBar );
+
+  ////////////////////////////////////////////////////////////////
+  // Display the user's name
   var name = document.createElement('div');
   name.classList.add(  'doenet-name' );
   thePanel.appendChild(name);
@@ -28,15 +43,6 @@ export function createPanelElement(apiRoot) {
   theIFrame.src = apiRoot + "/iframe.html";
   name.appendChild(theIFrame);
   
-  var meter = document.createElement('div');
-  meter.classList.add(  'doenet-meter' );  
-  thePanel.appendChild(meter);
-
-  var theBar = document.createElement('span');
-  theBar.classList.add(  'doenet-progress' );
-  setProgressBar( progress );  
-  meter.appendChild( theBar );
-
   document.body.appendChild(thePanel);
   
   return theIFrame;
@@ -44,7 +50,7 @@ export function createPanelElement(apiRoot) {
 
 export function setProgressBar( value ) {
   progress = value;
-
+  
   if (theBar) {
     if (typeof value === 'number') {
       theBar.style.width = (Math.round(value * 1000) / 10.0).toString() + '%';

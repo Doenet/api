@@ -1,4 +1,5 @@
 import template from './gdpr.html';
+import './gdpr.css';
 
 export function gdprConsent(callback) {
   var consent = localStorage.getItem('gdpr.doenet.cloud');
