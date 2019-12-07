@@ -7,7 +7,3 @@ export class xapiObject {
   }
 }
 
-export class xapiActivity extends xapiObject {
-  constructor() {
-  }
-}

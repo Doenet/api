@@ -5,6 +5,7 @@ export class xapiActor {
     } else {
       this.name = 'me';
     }
+    this.objectType = "Agent";
   }
 
   extendStatement( statement ) {

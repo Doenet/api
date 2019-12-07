@@ -8,7 +8,7 @@ with points.
 A traditional approach is LTI, which is challenging.  The Doenet API
 makes it easy for even static pages to connect to a gradebook.
 
-To enable your page to send "progress" (meaning gradebook) back
+To enable your page to send "progress" (meaning gradebook updates) back
 to the Doenet gradebook, simply include code like this.
 ```
 let worksheet = new doenet.Worksheet();

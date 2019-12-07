@@ -1,6 +1,7 @@
 # The Javascript API
 
-Often a user will want to display a link to doenet with a progress bar.
+Often a user will want to display a link to Doenet with a progress
+bar.
 
 ## new doenet.Worksheet({}) 
 
@@ -8,6 +9,9 @@ By default, the worksheet id is `window.location`.
 
 Options include `api` to set an API root, `title` to set the title of
 the worksheet, and `id` to set the worksheet URL.
+
+A worksheet is also an `xAPI.Object`, where it plays the role of an
+Activiy.
 
 ## worksheet.setProgress(p)
 
@@ -35,13 +39,20 @@ new doenet.xAPI.Verb({
   }
 });
 ```
-A large number of verbs are available under `doenet.xAPI.verb`.  For example, instead of creating your own copy of the `reviewed` verb, use `doenet.xAPI.verb.reviewed`.
+A large number of verbs are available under `doenet.xAPI.verb`.  For
+example, instead of creating the `reviewed` verb as above, use
+`doenet.xAPI.verb.reviewed`.
 
 ## new doenet.xAPI.Object( data )
 
-## new doenet.xAPI.Activity( worksheet )
+Generally one does not create an object directly, since there are various types.
 
-Convert a worksheet into an xAPI activity object.
+For example, a `doenet.Worksheet` is also an `xAPI.Object`,
+specifically an `Object` of type Activity.
+
+## new doenet.xAPI.Result( data )
+
+From a a Doenet worksheet, produce an xAPI activity object.
 
 ## new doenet.xAPI.Statement( actor, verb, object, ... )
 
@@ -49,7 +60,9 @@ Build an xAPI statement by combining an actor, a verb, and so on.  For example,
 ```
 new doenet.xAPI.Statement(
   doenet.xAPI.actor.me, 
-  doenet.xAPI.verb.checkedIn );
+  doenet.xAPI.verb.checkedIn,
+  worksheet
+  );
 ```
 
 ## worksheet.recordStatement( stmt ) 

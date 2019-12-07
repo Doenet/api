@@ -1,7 +1,12 @@
 export class xapiStatement {
   constructor() {
-    for( const x in arguments ) {
-      x.extendStatement( this );
+    this.triple = {}
+    for( const x of arguments ) {
+      x.extendStatement( this.triple );
     }
+  }
+
+  toJSON() {
+    return JSON.stringify(this.triple);
   }
 }
