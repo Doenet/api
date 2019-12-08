@@ -13,6 +13,7 @@ import uuidv4 from 'uuid/v4';
 
 //const DIFFSYNC_DEBOUNCE = 5003; // milliseconds to wait to save
 const DIFFSYNC_DEBOUNCE = 303; // milliseconds to wait to save
+const HEARTBEAT_INTERVAL = 1009; // milliseconds to wait being polling
 
 async function fetchFingerprint() {
   return new Promise((resolve, reject) => {
@@ -65,7 +66,8 @@ export class Worksheet extends xapiObject {
     worksheet.database = {};
 
     worksheet.differentialSynchronization = debounce(worksheet.differentialSynchronizationImmediately.bind(this), DIFFSYNC_DEBOUNCE);
-
+    window.setInterval(worksheet.heartbeat.bind(this), HEARTBEAT_INTERVAL);
+    
     let proxyHandler = {
       get(target, property, receiver) {
         const value = Reflect.get(...arguments);
@@ -132,13 +134,13 @@ export class Worksheet extends xapiObject {
             patch( worksheet.database, event.data.parameters.delta );
 
 	    // Confirm that our shadow now matches their shadow
-            if (hash(this.shadow) !== event.data.parameters.checksum) {
+            if (hash(worksheet.shadow) !== event.data.parameters.checksum) {
               // We are out of sync, and should request synchronization
-              this.contentWindow.postMessage( { message: 'getState',
-                                                parameters: { worksheet: this.id,
-                                                              uuid: this.uuid
-                                                            } },
-                                              this.api );
+              worksheet.contentWindow.postMessage( { message: 'getState',
+                                                     parameters: { worksheet: worksheet.id,
+                                                                   uuid: worksheet.uuid
+                                                                 } },
+                                                   worksheet.api );
             } else {
               patch( worksheet.shadow, event.data.parameters.delta );
             }
@@ -150,13 +152,15 @@ export class Worksheet extends xapiObject {
           }          
         }
       }, false);
-      
+
+      console.log("Waiting for loading of",iframe);
       // request the current page progress as soon as possible
       iframe.addEventListener("load", function() {
         iframe.contentWindow.postMessage( { message: 'getProgress',
                                             parameters: { worksheet: worksheet.id } },
                                           worksheet.api );
 
+        console.log( "Initial getState...");
         iframe.contentWindow.postMessage( { message: 'getState',
                                             parameters: { worksheet: worksheet.id,
                                                           uuid: worksheet.uuid                                                          
@@ -236,6 +240,21 @@ export class Worksheet extends xapiObject {
     }
   }
 
+  heartbeat() {
+    console.log("my heart is a lonely hunter that hunts on a lonely hill...");
+
+    if (this.shadow) {
+      this.contentWindow.postMessage( { message: 'patchState',
+                                        parameters: { worksheet: this.id,
+                                                      uuid: this.uuid,
+                                                      checksum: hash(this.shadow)
+                                                    } },
+                                      this.api );
+    } else {
+      console.log("My heart cannot beat without a shadow.");
+    }
+  }
+  
   recordStatement( statement ) {
     this.contentWindow.postMessage( { message: 'recordStatement',
                                       parameters: { worksheet: this.id,
