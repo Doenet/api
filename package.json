@@ -1,7 +1,7 @@
 {
   "name": "@doenet/beta",
-  "version": "1.0.0",
-  "description": "JavaScript library for the Doenet Cloud API",
+  "version": "1.0.1",
+  "description": "JavaScript library for Doenet services",
   "main": "dist/doenet.js",
   "scripts": {
     "dev": "webpack --mode development",
