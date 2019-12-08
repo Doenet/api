@@ -1,11 +1,12 @@
 {
-  "name": "@doenet/api",
-  "version": "0.5.0",
+  "name": "@doenet/beta",
+  "version": "1.0.0",
   "description": "JavaScript library for the Doenet Cloud API",
   "main": "dist/doenet.js",
   "scripts": {
     "dev": "webpack --mode development",
-    "build": "webpack --mode production"
+    "build": "webpack --mode production",
+    "prepare": "npm run build"
   },
   "author": {
     "name": "Jim Fowler",
@@ -15,6 +16,9 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/doenet/library"
+  },
+  "bugs": {
+    "url": "https://github.com/doenet/library/issues"
   },
   "license": "MIT",
   "devDependencies": {
