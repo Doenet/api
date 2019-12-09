@@ -58,14 +58,10 @@
   overflow: hidden;
 }
 
-@keyframes expandWidth {
-   0% { width: 0; }
-}
-
 .doenet-meter > span {
   display: block;
   height: 100%;
-  animation: expandWidth 1s;
+  transition: width 0.5s;
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
   border-top-left-radius: 3px;
