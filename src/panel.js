@@ -3,6 +3,7 @@ import './panel.css'
 let thePanel = undefined;
 let theIFrame = undefined;
 let theBar = undefined;
+let theMeter = undefined;
 let progress = undefined;
 
 // FIXME: this creates a singleton, so there can be only one apiRoot
@@ -16,14 +17,14 @@ export function createPanelElement(apiRoot) {
 
   ////////////////////////////////////////////////////////////////
   // Create the panel progress meter
-  var meter = document.createElement('div');
-  meter.classList.add(  'doenet-meter' );  
-  thePanel.appendChild(meter);
+  theMeter = document.createElement('div');
+  theMeter.classList.add(  'doenet-meter' );  
+  thePanel.appendChild(theMeter);
 
   theBar = document.createElement('span');
   theBar.classList.add(  'doenet-progress' );
   setProgressBar( progress );  
-  meter.appendChild( theBar );
+  theMeter.appendChild( theBar );
 
   ////////////////////////////////////////////////////////////////
   // Display the user's name
@@ -53,9 +54,10 @@ export function setProgressBar( value ) {
   
   if (theBar) {
     if (typeof value === 'number') {
+      theMeter.style.display = 'block';
       theBar.style.width = (Math.round(value * 1000) / 10.0).toString() + '%';
     } else {
-      theBar.style.width = '50%';
+      theMeter.style.display = 'none';
     }
   }
 }
