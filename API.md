@@ -7,17 +7,20 @@ bar.
 
 By default, the worksheet id is `window.location`.
 
-Options include `api` to set an API root, `title` to set the title of
-the worksheet, and `id` to set the worksheet URL.
+Options include `api` to set a different API root (for development),
+`title` to set the title of the worksheet, and `id` to set the
+worksheet URL.  (The provided worksheet URL must have the same origin
+as the page.)
 
-A worksheet is also an `xAPI.Object`, where it plays the role of an
-Activiy.
+A worksheet is also an `xAPI.Object` where it plays the role of an
+Activity.
 
 ## worksheet.setProgress(p)
 
-performs a cross-origin PUT
+Perform a cross-origin PUT
 /learners/:user/worksheets/:worksheet/progress via an iframe to set
-the progress for the given worksheet to `p`.
+the progress for the given worksheet to `p`.  This is the asme as
+`worksheet.progress = p;`.
 
 ## worksheet.addEventListener('progress', function(event, progress) {});
 

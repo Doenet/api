@@ -60,7 +60,9 @@ The first two lines
 <link rel="stylesheet" href="https://unpkg.com/@doenet/beta/dist/main.css">
 ```
 
-load the Doenet JavaScript and CSS.  Relying on [unpkg.com](https://unpkg.com) is just a convenience here; you can get the Doenet on `npm`.
+load the Doenet JavaScript and CSS.  Relying on
+[unpkg.com](https://unpkg.com) is just a convenience here; you can
+also access the Doenet library via `npm`.
 
 ### GDPR compliance
 

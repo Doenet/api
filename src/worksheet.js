@@ -179,7 +179,10 @@ export class Worksheet extends xapiObject {
     
     return new Proxy(this, {
       set(target, name, value) {
-        if (name === 'state') {
+        if (name === 'progress') {
+          target.setProgress( value );
+          return true;
+        } else if (name === 'state') {
           target.database = clone(value);
           target.state = new Proxy(worksheet.database, proxyHandler);
           target.differentialSynchronization();
