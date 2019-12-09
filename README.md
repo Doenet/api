@@ -22,11 +22,11 @@ the technical challenge, the current LTI and LMS ecosystem encourages
 walled gardens and hidden closed-source content.  Instructors may be
 building great content, but it's content most of the world cannot see,
 and if they can see it, they cannot participate as first-class
-learners.  A first-class learner can see his/her own progress, view a
-record their successes.  Doenet aims to open these walled gardens and
-invite learner's everywhere to engage deeply with interactive content
-by making it easy for content authors to connect their (statically
-hosted!) pages to something richer than a gradebook.
+learners.  First-class learners can see their own progress and view a
+record of their successes.  Doenet aims to open these walled gardens
+and invite learner's everywhere to engage deeply with interactive
+content by making it easy for content authors to connect their
+(statically hosted!) pages to something richer than a gradebook.
 
 In short, it's **"Google analytics for education"**, co-opting the
 "good" parts of e-commerce to improve open educational materials.
