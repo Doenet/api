@@ -244,8 +244,6 @@ export class Worksheet extends xapiObject {
   }
 
   heartbeat() {
-    console.log("my heart is a lonely hunter that hunts on a lonely hill...");
-
     if (this.shadow) {
       this.contentWindow.postMessage( { message: 'patchState',
                                         parameters: { worksheet: this.id,
@@ -254,7 +252,7 @@ export class Worksheet extends xapiObject {
                                                     } },
                                       this.api );
     } else {
-      console.log("My heart cannot beat without a shadow.");
+      console.log("diffsync: heartbeat is missing shadow");
     }
   }
   

@@ -18,7 +18,7 @@ export function createPanelElement(apiRoot) {
   ////////////////////////////////////////////////////////////////
   // Create the panel progress meter
   theMeter = document.createElement('div');
-  theMeter.classList.add(  'doenet-meter' );  
+  theMeter.classList.add(  'doenet-meter' );
   thePanel.appendChild(theMeter);
 
   theBar = document.createElement('span');
@@ -54,10 +54,9 @@ export function setProgressBar( value ) {
   
   if (theBar) {
     if (typeof value === 'number') {
-      theMeter.style.display = 'block';
       theBar.style.width = (Math.round(value * 1000) / 10.0).toString() + '%';
     } else {
-      theMeter.style.display = 'none';
+      theBar.style.width = '0%';
     }
   }
 }
