@@ -6,3 +6,6 @@ src/
 # ignore emacs backups
 \#*\#
 .\#*
+
+# ignore scripts
+*.sh
