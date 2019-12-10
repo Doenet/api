@@ -51,13 +51,19 @@ export class Worksheet extends xapiObject {
     } else {
       worksheet.id = window.location.toString();
     }
-
+    
     if (options.title) {
       worksheet.title = options.title;
     } else {
       worksheet.title = document.title;
     }
 
+    // get a browser fingerprint which serves as a proxy for a stable userId
+    (async function() {
+      let fp = await fetchFingerprint();
+      worksheet.userId = hash(fp);
+    })();
+    
     worksheet.progressCallbacks = [];
     worksheet.progress = undefined;
 
@@ -65,6 +71,10 @@ export class Worksheet extends xapiObject {
     worksheet.shadow = undefined;
     worksheet.database = {};
 
+    worksheet.globalStateCallbacks = [];
+    worksheet.globalShadow = undefined;
+    worksheet.globalDatabase = {};
+    
     worksheet.differentialSynchronization = debounce(worksheet.differentialSynchronizationImmediately.bind(this), DIFFSYNC_DEBOUNCE);
     window.setInterval(worksheet.heartbeat.bind(this), HEARTBEAT_INTERVAL);
     
@@ -94,6 +104,7 @@ export class Worksheet extends xapiObject {
     };
     
     worksheet.state = new Proxy(worksheet.database, proxyHandler);
+    worksheet.globalState = new Proxy(worksheet.globalDatabase, proxyHandler);
     
     // not consented to data collection yet...
     worksheet.consent = null;
@@ -147,34 +158,68 @@ export class Worksheet extends xapiObject {
             
             for( const callback of worksheet.stateCallbacks ) {
               // FIXME: could wrap this in a "make immutable" proxy
-              callback( event, worksheet.database );
+              callback( event, worksheet.state );
             }
-          }          
+          }
+
+          if (event.data.message === 'setGlobalState') {
+            console.log("GOT GLOBAL STATE");
+            let newState = event.data.parameters.state;
+
+            worksheet.globalShadow = clone( newState );
+            worksheet.globalDatabase = clone( newState );            
+            worksheet.globalState = new Proxy(worksheet.globalDatabase, proxyHandler);
+            
+            for( const callback of worksheet.globalStateCallbacks ) {
+              // FIXME: could wrap this in a "make immutable" proxy
+              callback( event, worksheet.globalState );
+            }
+          }
+
+          if (event.data.message === 'patchGlobalState') {
+            patch( worksheet.globalDatabase, event.data.parameters.delta );
+
+	    // Confirm that our shadow now matches their shadow
+            if (hash(worksheet.globalShadow) !== event.data.parameters.checksum) {
+              // We are out of sync, and should request synchronization
+              worksheet.contentWindow.postMessage( { message: 'getGlobalState',
+                                                     parameters: { worksheet: worksheet.id,
+                                                                   uuid: worksheet.uuid
+                                                                 } },
+                                                   worksheet.api );
+            } else {
+              patch( worksheet.globalShadow, event.data.parameters.delta );
+            }
+            
+            for( const callback of worksheet.globalStateCallbacks ) {
+              // FIXME: could wrap this in a "make immutable" proxy
+              callback( event, worksheet.globalState );
+            }
+          }      
+          
         }
       }, false);
 
-      console.log("Waiting for loading of",iframe);
       // request the current page progress as soon as possible
       iframe.addEventListener("load", function() {
         iframe.contentWindow.postMessage( { message: 'getProgress',
                                             parameters: { worksheet: worksheet.id } },
                                           worksheet.api );
 
-        console.log( "Initial getState...");
+        console.log( "Initial getState and getGlobalState...");
+        
         iframe.contentWindow.postMessage( { message: 'getState',
                                             parameters: { worksheet: worksheet.id,
                                                           uuid: worksheet.uuid                                                          
                                                         } },
                                           worksheet.api );
+        
+        iframe.contentWindow.postMessage( { message: 'getGlobalState',
+                                            parameters: { worksheet: worksheet.id,
+                                                          uuid: worksheet.uuid                                                          
+                                                        } },
+                                          worksheet.api );
       });
-      
-      // get a browser fingerprint
-      (async function() {
-        let fp = await fetchFingerprint();
-        //console.log(JSON.stringify( fp ));
-        console.log("fp=",hash(fp));
-      })();
-      
     });
     
     return new Proxy(this, {
@@ -185,6 +230,11 @@ export class Worksheet extends xapiObject {
         } else if (name === 'state') {
           target.database = clone(value);
           target.state = new Proxy(worksheet.database, proxyHandler);
+          target.differentialSynchronization();
+          return true;
+        } else if (name === 'globalState') {
+          target.globalDatabase = clone(value);
+          target.globalState = new Proxy(worksheet.globalDatabase, proxyHandler);
           target.differentialSynchronization();
           return true;
         } else {
@@ -201,8 +251,11 @@ export class Worksheet extends xapiObject {
     }
 
     if (eventName == 'state') {
-      //callback( {}, this.progress );
       this.stateCallbacks.push( callback );
+    }
+
+    if (eventName == 'globalState') {
+      this.globalStateCallbacks.push( callback );
     }    
   }
 
@@ -223,24 +276,44 @@ export class Worksheet extends xapiObject {
   differentialSynchronizationImmediately() {
     if (this.shadow === undefined) {
       console.log("diffsync: without a shadow, we cannot synchronize.");
-      return;
+    } else {
+      console.log("diffsync: diffing shadow and database...");
+      let delta = diff( this.shadow, this.database );
+
+      if (delta !== undefined) {
+        this.differentialSynchronizationStatus( 'saving' );
+        this.contentWindow.postMessage( { message: 'patchState',
+                                          parameters: { worksheet: this.id,
+                                                        delta: delta,
+                                                        uuid: this.uuid,
+                                                        checksum: hash(this.shadow)
+                                                      } },
+                                        this.api );
+        
+        this.shadow = clone(this.database);
+      }
     }
+
+    if (this.globalShadow === undefined) {
+      console.log("diffsync: without a global shadow, we cannot synchronize.");
+    } else {
+      console.log("diffsync: diffing global shadow and database...");
+      let delta = diff( this.globalShadow, this.globalDatabase );
+
+      if (delta !== undefined) {
+        this.differentialSynchronizationStatus( 'saving' );
+        this.contentWindow.postMessage( { message: 'patchGlobalState',
+                                          parameters: { worksheet: this.id,
+                                                        delta: delta,
+                                                        uuid: this.uuid,
+                                                        checksum: hash(this.globalShadow)
+                                                      } },
+                                        this.api );
+        
+        this.globalShadow = clone(this.globalDatabase);
+      }
+    }    
     
-    console.log("diffsync: diffing shadow and database...");
-    let delta = diff( this.shadow, this.database );
-
-    if (delta !== undefined) {
-      this.differentialSynchronizationStatus( 'saving' );
-      this.contentWindow.postMessage( { message: 'patchState',
-                                        parameters: { worksheet: this.id,
-                                                      delta: delta,
-                                                      uuid: this.uuid,
-                                                      checksum: hash(this.shadow)
-                                                    } },
-                                      this.api );
-
-      this.shadow = clone(this.database);
-    }
   }
 
   heartbeat() {
@@ -251,8 +324,15 @@ export class Worksheet extends xapiObject {
                                                       checksum: hash(this.shadow)
                                                     } },
                                       this.api );
-    } else {
-      console.log("diffsync: heartbeat is missing shadow");
+    }
+
+    if (this.globalShadow) {
+      this.contentWindow.postMessage( { message: 'patchGlobalState',
+                                        parameters: { worksheet: this.id,
+                                                      uuid: this.uuid,
+                                                      checksum: hash(this.globalShadow)
+                                                    } },
+                                      this.api );
     }
   }
   

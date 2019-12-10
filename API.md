@@ -100,6 +100,16 @@ A callback for state changes.
 
 (This is "real-time" via the PATCH mechanism.)
 
+## worksheet.globalState
+
+This is the same as `worksheet.state` but shared among all viewers of
+the page.  There is likewise 
+`worksheet.addEventListener('state', ...);`
+
+## worksheet.userId
+
+This is a locally-generated fingerprint, which is useful when working with  `globalState`.
+
 ## Example
 
 ```

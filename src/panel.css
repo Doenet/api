@@ -1,5 +1,7 @@
 .doenet-panel {
     position: fixed;
+    display: flex;
+    transition: width 0.25s;
     right: 0;
     top: 0;
     width: 150pt;
@@ -13,26 +15,21 @@
 }
 
 .doenet-name {
-    position: absolute;
     font-family: sans-serif;
     font-size: 12pt;
-    width: 72pt;
-    top: 6pt;
-    right: 6pt;
+    flex: 0 0 72pt;
 }
 
 .doenet-meter {
-    position: absolute;
-    top: 6pt;
-    left: 6pt;
-    width: 72pt;
-    height: 12pt;
-    background: #eee;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-    padding: 0px;
-    box-shadow: inset 0 -2px 6px rgba(0,0,0,0.1);
+  flex: 0 0 72pt;
+  margin-right: 6pt;
+  height: 12pt;
+  background: #eee;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  border-radius: 3px;
+  padding: 0px;
+  box-shadow: inset 0 -2px 6px rgba(0,0,0,0.1);
 }
 
 .doenet-meter > span:after {
@@ -50,7 +47,6 @@
     transparent
   );
   z-index: 1;
-  //background-size: 50px 50px;
   border-top-right-radius: 3px;
   border-bottom-right-radius: 3px;
   border-top-left-radius: 3px;
