@@ -104,7 +104,7 @@ A callback for state changes.
 
 This is the same as `worksheet.state` but shared among all viewers of
 the page.  There is likewise 
-`worksheet.addEventListener('state', ...);`
+`worksheet.addEventListener('globalState', ...);`
 
 ## worksheet.userId
 
