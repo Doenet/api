@@ -57,12 +57,6 @@ export class Worksheet extends xapiObject {
     } else {
       worksheet.title = document.title;
     }
-
-    // get a browser fingerprint which serves as a proxy for a stable userId
-    (async function() {
-      let fp = await fetchFingerprint();
-      worksheet.userId = hash(fp);
-    })();
     
     worksheet.progressCallbacks = [];
     worksheet.progress = undefined;
@@ -207,18 +201,24 @@ export class Worksheet extends xapiObject {
                                           worksheet.api );
 
         console.log( "Initial getState and getGlobalState...");
-        
-        iframe.contentWindow.postMessage( { message: 'getState',
-                                            parameters: { worksheet: worksheet.id,
-                                                          uuid: worksheet.uuid                                                          
-                                                        } },
-                                          worksheet.api );
-        
-        iframe.contentWindow.postMessage( { message: 'getGlobalState',
-                                            parameters: { worksheet: worksheet.id,
-                                                          uuid: worksheet.uuid                                                          
-                                                        } },
-                                          worksheet.api );
+
+        // get a browser fingerprint which serves as a proxy for a stable userId
+        (async function() {
+          let fp = await fetchFingerprint();
+          worksheet.userId = hash(fp);
+
+          iframe.contentWindow.postMessage( { message: 'getState',
+                                              parameters: { worksheet: worksheet.id,
+                                                            uuid: worksheet.uuid                                                          
+                                                          } },
+                                            worksheet.api );
+          
+          iframe.contentWindow.postMessage( { message: 'getGlobalState',
+                                              parameters: { worksheet: worksheet.id,
+                                                            uuid: worksheet.uuid                                                          
+                                                          } },
+                                            worksheet.api );
+        })();
       });
     });
     
