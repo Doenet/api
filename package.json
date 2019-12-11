@@ -1,6 +1,6 @@
 {
   "name": "@doenet/beta",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "JavaScript library for Doenet services",
   "main": "dist/doenet.js",
   "scripts": {
