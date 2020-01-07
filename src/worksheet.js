@@ -57,6 +57,9 @@ export class Worksheet extends xapiObject {
     } else {
       worksheet.title = document.title;
     }
+
+    worksheet.readyCallbacks = [];
+    worksheet.ready = false;
     
     worksheet.progressCallbacks = [];
     worksheet.progress = undefined;
@@ -157,7 +160,6 @@ export class Worksheet extends xapiObject {
           }
 
           if (event.data.message === 'setGlobalState') {
-            console.log("GOT GLOBAL STATE");
             let newState = event.data.parameters.state;
 
             worksheet.globalShadow = clone( newState );
@@ -207,6 +209,11 @@ export class Worksheet extends xapiObject {
           let fp = await fetchFingerprint();
           worksheet.userId = hash(fp);
 
+          worksheet.ready = true;
+          for( const callback of worksheet.readyCallbacks ) {
+            callback( {} );
+          }
+          
           iframe.contentWindow.postMessage( { message: 'getState',
                                               parameters: { worksheet: worksheet.id,
                                                             uuid: worksheet.uuid                                                          
@@ -250,6 +257,14 @@ export class Worksheet extends xapiObject {
       this.progressCallbacks.push( callback );
     }
 
+    if (eventName == 'ready') {
+      if (this.ready) {
+        callback( {} );
+      } else {
+        this.readyCallbacks.push( callback );
+      }
+    }
+    
     if (eventName == 'state') {
       this.stateCallbacks.push( callback );
     }
