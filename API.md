@@ -100,6 +100,11 @@ A callback for state changes.
 
 (This is "real-time" via the PATCH mechanism.)
 
+## worksheet.addEventListener('ready', function(err) {...});
+
+A callback for when the worksheet is ready, e.g., the GDPR consent
+process has completed.
+
 ## worksheet.globalState
 
 This is the same as `worksheet.state` but shared among all viewers of
